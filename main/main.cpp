@@ -8,13 +8,13 @@
 #include "hardware/timer.h"
 #include "hardware/gpio.h"
 
-
-const uint PWME_PIN_1 = 0;       // pino motor esquerdo - pino 1
-const uint PWME_PIN_2 = 1;       // pino motor esquerdo - pino 2
-const uint PWMD_PIN_1 = 2;       // pino motor direito - pino 1
-const uint PWMD_PIN_2 = 3;       // pino motor direito - pino 2
+/*Os pinos "1" podem ser pwm ou digital, já os "2" somente pwm*/
+const uint E_PIN_1 = 0;       // pino motor esquerdo - pino 1
+const uint E_PIN_2 = 1;       // pino motor esquerdo - pino 2
+const uint D_PIN_1 = 2;       // pino motor direito - pino 1
+const uint D_PIN_2 = 3;       // pino motor direito - pino 2
 const float frequency = 30000.0; // frequencia do motor
-const int invertE = 0;           // caso o motor esquerdo esteja invertido, mude para 1
+const int invertE = 1;           // caso o motor esquerdo esteja invertido, mude para 1
 const int invertD = 0;           // caso o motor direito esteja invertido, mude para 1
 
 const uint SERVO = 6; // pino servo
@@ -84,40 +84,76 @@ uint getEncoderValue(PIO, int);
 // ======================= Main ===================
 
 void moveMotor(int speedE, int speedD){
-    float duty_cycleE = (float)speedE / 100.0f * 125e6 / frequency;
-    float duty_cycleD = (float)speedD / 100.0f * 125e6 / frequency;
+    float duty_cycleE = speedE / 100.0f * 125e6 / frequency;
+    float duty_cycleD = speedD / 100.0f * 125e6 / frequency;
     if (speedE > 0)
     {
-        pwm_set_gpio_level(PWME_PIN_1, !invertE * duty_cycleE);
-        pwm_set_gpio_level(PWME_PIN_2, invertE * duty_cycleE);
+        pwm_set_gpio_level(E_PIN_1, !invertE * duty_cycleE);
+        pwm_set_gpio_level(E_PIN_2, invertE * duty_cycleE);
     }
     else if (speedE < 0)
     {
-        pwm_set_gpio_level(PWME_PIN_1, !invertE * duty_cycleE);
-        pwm_set_gpio_level(PWME_PIN_2, invertE * duty_cycleE);
+        pwm_set_gpio_level(E_PIN_1, invertE * abs(duty_cycleE));
+        pwm_set_gpio_level(E_PIN_2, !invertE * abs(duty_cycleE));
     }
     else
     {
-        pwm_set_gpio_level(PWME_PIN_1, 1.0f);
-        pwm_set_gpio_level(PWME_PIN_2, 1.0f);
+        pwm_set_gpio_level(E_PIN_1, 125e6 / frequency);
+        pwm_set_gpio_level(E_PIN_2, 125e6 / frequency);
     }
 
     if (speedD > 0)
     {
-        pwm_set_gpio_level(PWMD_PIN_1, !invertD * duty_cycleD);
-        pwm_set_gpio_level(PWMD_PIN_2, invertD * duty_cycleD);
+        pwm_set_gpio_level(D_PIN_1, !invertD * duty_cycleD);
+        pwm_set_gpio_level(D_PIN_2, invertD * duty_cycleD);
     }
     else if (speedD < 0)
     {
-        pwm_set_gpio_level(PWMD_PIN_1, !invertD * duty_cycleD);
-        pwm_set_gpio_level(PWMD_PIN_2, invertD * duty_cycleD);
+        pwm_set_gpio_level(D_PIN_1, invertD * abs(duty_cycleD));
+        pwm_set_gpio_level(D_PIN_2, !invertD * abs(duty_cycleD));
     }
     else
     {
-        pwm_set_gpio_level(PWMD_PIN_1, 1.0f);
-        pwm_set_gpio_level(PWMD_PIN_2, 1.0f);
+        pwm_set_gpio_level(D_PIN_1, 125e6 / frequency);
+        pwm_set_gpio_level(D_PIN_2, 125e6 / frequency);
     }
 }
+
+/*void moveMotor(int speedE, int speedD){
+    float duty_cycleE = speedE / 100.0f * 125e6 / frequency;
+    float duty_cycleD = speedD / 100.0f * 125e6 / frequency;
+    if (speedE > 0)
+    {
+        gpio_put(E_PIN_1, invertE);
+        pwm_set_gpio_level(E_PIN_2, duty_cycleE);
+    }
+    else if (speedE < 0)
+    {
+        gpio_put(E_PIN_1, !invertE);
+        pwm_set_gpio_level(E_PIN_2, abs(duty_cycleE));
+    }
+    else
+    {
+        gpio_put(E_PIN_1, 1);
+        pwm_set_gpio_level(E_PIN_2, 0);
+    }
+
+    if (speedD > 0)
+    {
+        gpio_put(D_PIN_1, invertD);
+        pwm_set_gpio_level(D_PIN_2, abs(duty_cycleD));
+    }
+    else if (speedD < 0)
+    {
+        gpio_put(D_PIN_1, !invertD);
+        pwm_set_gpio_level(D_PIN_2, abs(duty_cycleD));
+    }
+    else
+    {
+        gpio_put(D_PIN_1, 1);
+        pwm_set_gpio_level(D_PIN_2, 0);
+    }
+}*/
 
 void setServoPosition(int pos)
 {
@@ -177,15 +213,6 @@ void EndOLED(){
 	myOLED.OLEDdeI2CInit(); 
 }
 
-void Test() {
-	myOLED.OLEDclearBuffer(); 
-	myOLED.setFont(pFontDefault);
-	myOLED.setCursor(0,0);
-	myOLED.print("Modo: 0");
-	myOLED.OLEDupdate();  
-	busy_wait_ms(2000);
-}
-
 uint getEncoderValue(PIO pio, int sm){
     pio_sm_exec_wait_blocking(pio, sm, pio_encode_in(pio_x, 32));
     return pio_sm_get_blocking(pio, sm);
@@ -195,13 +222,14 @@ int main()
 {
     // Inicialize o stdio
     stdio_init_all();
-    // Motors(PWME_PIN_1, PWME_PIN_2, PWMD_PIN_1, PWMD_PIN_2, frequency);
+    MotorsDRV(E_PIN_1, E_PIN_2, D_PIN_1, D_PIN_2, frequency);
+    // MotorsIFX(E_PIN_1, E_PIN_2, D_PIN_1, D_PIN_2, frequency);
     // Servo(SERVO);
     // PIOpwm(pioT, smT, TURBINA, frequencyTurbina);
     // init_radio_channels();
     // OLED(4, 5);
-    Encoder(pioE, smE1, CHE_A, CHE_B);
-    Encoder(pioE, smE2, CHD_A, CHD_B);
+    // Encoder(pioE, smE1, CHE_A, CHE_B);
+    // Encoder(pioE, smE2, CHD_A, CHD_B);
 
     // setTurbinaSpeed(50);
     // setServoPosition(2000);
@@ -213,13 +241,12 @@ int main()
 
         start_time = time_us_64();
         for(int i = 0; i<TERMS; i++){
-            ENCE = getEncoderValue(pioE, smE1);
-            ENCD = getEncoderValue(pioE, smE2);
+            moveMotor(50,50);
         }
         end_time = time_us_64();
 
         printf("%llu\n\n",end_time - start_time);
-        printf("%ld\t%ld\n", getEncoderValue(pioE, smE1), getEncoderValue(pioE, smE2));
+        // // printf("%ld\t%ld\n", getEncoderValue(pioE, smE1), getEncoderValue(pioE, smE2));
     }
 
     return 0;

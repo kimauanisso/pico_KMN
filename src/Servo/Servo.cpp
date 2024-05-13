@@ -1,4 +1,4 @@
-#include "/home/leonardo/pico/pico_project/include/Servo/Servo.hpp"
+#include "Servo/Servo.hpp"
 
 void Servo(uint gpio_pin){
     gpio_set_function(gpio_pin, GPIO_FUNC_PWM);

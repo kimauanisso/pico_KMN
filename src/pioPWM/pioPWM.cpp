@@ -1,4 +1,4 @@
-#include "/home/leonardo/pico/pico_project/include/pioPWM/pioPWM.hpp"
+#include "pioPWM/pioPWM.hpp"
 #include "hardware/gpio.h"
 
 void PIOpwm(PIO pio, int sm, uint gpio_pin, int frequency){

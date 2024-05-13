@@ -26,7 +26,7 @@ cd pico-sdk
 git submodule update --init
 cd ..
 
-git clone https://github.com/kimauanisso/pico_SDK.git
+git clone https://github.com/kimauanisso/pico_KMN.git
 
 sudo apt update
 sudo apt upgrade

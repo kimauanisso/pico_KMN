@@ -1,4 +1,4 @@
-#include "/home/leonardo/pico/pico_project/include/Encoder/Encoder.hpp"
+#include "Encoder/Encoder.hpp"
 #include "hardware/gpio.h"
 
 void Encoder(PIO pio, uint sm, uint a_pin, uint b_pin){
